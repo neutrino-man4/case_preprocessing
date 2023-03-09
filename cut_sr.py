@@ -36,7 +36,6 @@ for filename in file_paths:
     for suffix in SUFFIXES:
         signal_name=signal_name.replace(suffix,'') # Get rid of the suffixes for tunes and stuff
     
-    pathlib.Path(os.path.join(outfolder,signal_name)).mkdir(parents=True,exist_ok=True)        
     
     print(f'###### SIGNAL = {signal_name} ########')
     with h5py.File(filename, "r") as f:
@@ -57,21 +56,30 @@ for filename in file_paths:
         j2_JMEVars=np.array(f["jet2_JME_vars"])[sig_mask].astype(np.float32)
         
 
-        j1_sf_array=j2_sf_array=np.empty(j1_JMEVars.shape,dtype=np.float32)
+        j1_sf_array=np.empty(j1_JMEVars.shape,dtype=np.float32)
+        j2_sf_array=np.empty(j2_JMEVars.shape,dtype=np.float32)
+        
         for i in pt_sf_indices:
             j1_sf_array[:,i]=np.divide(j1_JMEVars[:,i],sig_jj[:,J1PT],out=np.zeros_like(j1_JMEVars[:,i]), where=sig_jj[:,J1PT]!=0.)
-            j2_sf_array[:,i]=np.divide(j2_JMEVars[:,i],sig_jj[:,J2PT],out=np.zeros_like(j1_JMEVars[:,i]), where=sig_jj[:,J2PT]!=0.)
+            j2_sf_array[:,i]=np.divide(j2_JMEVars[:,i],sig_jj[:,J2PT],out=np.zeros_like(j2_JMEVars[:,i]), where=sig_jj[:,J2PT]!=0.)
+            print(f'{i}, Max j1 SF: {j1_sf_array[:,i].max()}')
+            print(f'{i}, Max j2 SF: {j2_sf_array[:,i].max()}')
+        
         for i in mass_sf_indices:
-            j1_sf_array[:,i]=np.divide(j1_JMEVars[:,i],sig_jj[:,J1M],out=np.zeros_like(j1_JMEVars[:,i]), where=sig_jj[:,J1M]!=0.)
-            j2_sf_array[:,i]=np.divide(j2_JMEVars[:,i],sig_jj[:,J2M],out=np.zeros_like(j1_JMEVars[:,i]), where=sig_jj[:,J2M]!=0.)
+            j1_sf_array[:,i]=np.divide(j1_JMEVars[:,i],sig_jj[:,J1M],out=np.zeros_like(j1_JMEVars[:,i]), where=sig_jj[:,J1M]>=1.0e-3)
+            j2_sf_array[:,i]=np.divide(j2_JMEVars[:,i],sig_jj[:,J2M],out=np.zeros_like(j2_JMEVars[:,i]), where=sig_jj[:,J2M]!=0.)
+            print(f'{i}, Max j1 SF: {j1_sf_array[:,i].max()}')
+            print(f'{i}, Max j2 SF: {j2_sf_array[:,i].max()}')
+        
+        j1_sf_array=np.clip(j1_sf_array,0.,5.)
+        j2_sf_array=np.clip(j2_sf_array,0.,5.)
 
-    
         # Reclustering
         #jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 0.8)
         
         # 
         for ind,i in enumerate(mass_sf_indices):
-            
+            #if ind<7: continue
             print('########################')
             print(f"Var: {ind+1}/{len(mass_sf_indices)}")
             #if ind<4: continue
@@ -95,7 +103,8 @@ for filename in file_paths:
             
             
             # Define output filepath and store 
-            out_filepath=os.path.join(outfolder,signal_name,signal_name+'_'+tags[ind]+'.h5')
+            pathlib.Path(os.path.join(outfolder,signal_name,tags[ind])).mkdir(parents=True,exist_ok=True)        
+            out_filepath=os.path.join(outfolder,signal_name,tags[ind],signal_name+'.h5')
             
             sig_hf = h5py.File(out_filepath, 'w')
             sig_hf.create_dataset('jet1_PFCands', data=sig_pf1)
