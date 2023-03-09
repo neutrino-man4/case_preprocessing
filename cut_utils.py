@@ -69,6 +69,7 @@ def perform_jetPF_scaling(constituents,scale_factor):
         m2_sf=np.power(scale_factor[:],2)
         M2_scaled = M2 * m2_sf[:,None]
         constituents[:,:,E]=np.sqrt(M2_scaled+P2)
+        
     return constituents
 
 def perform_jet_scaling(jet_kinematics,j1_scale_factor,j2_scale_factor):
