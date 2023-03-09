@@ -27,8 +27,8 @@ pt_JES_up, m_JES_up, pt_JES_down, m_JES_down, pt_JER_up, m_JER_up, pt_JER_down, 
 
 pt_sf_indices=[0,2,4,6]
 mass_sf_indices=[1,3,5,7,8,9,10,11]
-
 tags=['JES_up','JES_down','JER_up','JER_down','JMS_up','JMS_down','JMR_up','JMR_down']
+
 
 def xyze_to_eppt(constituents,normalize,include_mass=False):
     ''' converts an array [N x 100, 4] of particles
@@ -72,25 +72,34 @@ def get_m2(constituents):
 def perform_jetPF_scaling(constituents,scale_factor):
     PT,ETA,PHI,M = range(4); PX, PY, PZ, E = range(4)
     M2,P2=get_m2(constituents)
-    m2_sf=np.power(scale_factor[:,-1],2)
-    if scale_factor.shape[1]==2:
+    if len(scale_factor.shape)==2:
+        print("pT and m will be scaled")
+        m2_sf=np.power(scale_factor[:,1],2)
         constituents[:,:,PX]= constituents[:,:,PX]*scale_factor[:,0,None]
         constituents[:,:,PY]= constituents[:,:,PY]*scale_factor[:,0,None]
         M2_scaled = M2 * m2_sf[:,None]
         constituents[:,:,E]=np.sqrt(M2_scaled+P2)
     else:
+        print("Only m will be scaled")
+        m2_sf=np.power(scale_factor[:],2)
         M2_scaled = M2 * m2_sf[:,None]
         constituents[:,:,E]=np.sqrt(M2_scaled+P2)
     return constituents
 
 def perform_jet_scaling(jet_kinematics,j1_scale_factor,j2_scale_factor):
     
-    jet_kinematics[:,J1M]=jet_kinematics[:,J1M]*j1_scale_factor[:,-1]
-    jet_kinematics[:,J2M]=jet_kinematics[:,J2M]*j2_scale_factor[:,-1]
         
-    if j1_scale_factor.shape[1]==2:
+    if len(j1_scale_factor.shape)==2:
+        print("pT and m will be scaled")
         jet_kinematics[:,J1PT]=jet_kinematics[:,J1PT]*j1_scale_factor[:,0]
         jet_kinematics[:,J2PT]=jet_kinematics[:,J2PT]*j2_scale_factor[:,0]
+        jet_kinematics[:,J1M]=jet_kinematics[:,J1M]*j1_scale_factor[:,1]
+        jet_kinematics[:,J2M]=jet_kinematics[:,J2M]*j2_scale_factor[:,1]
+    else:
+        print("Only m will be scaled")
+        jet_kinematics[:,J1M]=jet_kinematics[:,J1M]*j1_scale_factor[:]
+        jet_kinematics[:,J2M]=jet_kinematics[:,J2M]*j2_scale_factor[:]
+    
     jet1=Momentum4.m_eta_phi_pt(jet_kinematics[:,J1M],jet_kinematics[:,J1ETA],jet_kinematics[:,J1PHI],jet_kinematics[:,J1PT])
     jet2=Momentum4.m_eta_phi_pt(jet_kinematics[:,J2M],jet_kinematics[:,J2ETA],jet_kinematics[:,J2PHI],jet_kinematics[:,J2PT])
     dijet=jet1+jet2
@@ -204,18 +213,18 @@ with h5py.File(filename, "r") as f:
     #jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 0.8)
     jetdef = fastjet.JetDefinition(fastjet.cambridge_algorithm, 0.8)
     for ind,i in enumerate(mass_sf_indices):
-        
+        if ind<4: continue
         # Read in Jet PFCands
         sig_pf1 = np.array(f["jet1_PFCands"])[sig_mask].astype(np.float32)
         sig_pf2 = np.array(f["jet2_PFCands"])[sig_mask].astype(np.float32)
         # Perform rescaling
         if ind<4:
-            print(f'Now scaling for {tags[i]}, from indices {i-1},{i}')
+            print(f'Now scaling for {tags[ind]}, from indices {i-1},{i}')
             sig_pf1=perform_jetPF_scaling(sig_pf1,j1_sf_array[:,i-1:i+1])
             sig_pf2=perform_jetPF_scaling(sig_pf2,j2_sf_array[:,i-1:i+1])
             sig_jj=perform_jet_scaling(sig_jj,j1_sf_array[:,i-1:i+1],j2_sf_array[:,i-1:i+1])
         else:
-            print(f'Now scaling for {tags[i]}, from index {i}')
+            print(f'Now scaling for {tags[ind]}, from index {i}')
             sig_pf1=perform_jetPF_scaling(sig_pf1,j1_sf_array[:,i])
             sig_pf2=perform_jetPF_scaling(sig_pf2,j2_sf_array[:,i])
             sig_jj=perform_jet_scaling(sig_jj,j1_sf_array[:,i],j2_sf_array[:,i])
