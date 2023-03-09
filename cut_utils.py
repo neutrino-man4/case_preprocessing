@@ -8,6 +8,13 @@ import os
 import copy
 from pylorentz import Momentum4
 
+MJJ, DETA, J1PT, J1ETA, J1PHI, J1M, J2PT,J2ETA, J2PHI, J2M = range(10)
+
+
+deta_jj = 1.3 # CAREFUL: background files have been skimmed with < 1.4
+mjj = 1450
+jPt = 300
+
 def xyze_to_eppt(constituents,normalize,include_mass=False):
     ''' converts an array [N x 100, 4] of particles
 from px, py, pz, E to eta, phi, pt (mass omitted) (8/3/23: Mass added, but values imaginary/NAN)
@@ -66,7 +73,7 @@ def perform_jetPF_scaling(constituents,scale_factor):
 
 def perform_jet_scaling(jet_kinematics,j1_scale_factor,j2_scale_factor):
     
-        
+    
     if len(j1_scale_factor.shape)==2:
         print("pT and m will be scaled")
         jet_kinematics[:,J1PT]=jet_kinematics[:,J1PT]*j1_scale_factor[:,0]
@@ -85,6 +92,7 @@ def perform_jet_scaling(jet_kinematics,j1_scale_factor,j2_scale_factor):
     return jet_kinematics
 
 def recluster(array,normalize,jetkinematics,jetindex=0):
+    jetdef = fastjet.JetDefinition(fastjet.cambridge_algorithm, 0.8)
     j1s = np.array(array)
     totlength = len(j1s)
     for i in range(totlength):
