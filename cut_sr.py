@@ -6,6 +6,7 @@ import os
 import glob; import pdb; import pathlib
 import copy
 import case_preprocessing.cut_utils as ctl
+import fastjet
 
 #filename = sys.argv[1]
 raw_signal_dir='/work/bmaier/CASE/RAWFILES/signals_merged'
@@ -18,10 +19,11 @@ deta_jj = 1.3 # CAREFUL: background files have been skimmed with < 1.4
 mjj = 1450
 jPt = 300
 
+MJJ, DETA, J1PT, J1ETA, J1PHI, J1M, J2PT,J2ETA, J2PHI, J2M = range(10)
+
 SUFFIXES=['_TuneCP2_13TeV-pythia8_TIMBER','_TuneCP5_13TeV_pythia8_TIMBER','_TuneCP5_13TeV-madgraph-pythia8_TIMBER',\
           '_TuneCP5_13TeV-madgraphMLM-pythia8_TIMBER']
 # Define index positions of jet_kinematic variables
-MJJ, DETA, J1PT, J1ETA, J1PHI, J1M, J2PT,J2ETA, J2PHI, J2M = range(10)
 # Define index positions of jet energy variations
 pt_JES_up, m_JES_up, pt_JES_down, m_JES_down, pt_JER_up, m_JER_up, pt_JER_down, m_JER_down, m_JMS_up, m_JMS_down, m_JMR_up, m_JMR_down=range(12)
 
@@ -30,12 +32,13 @@ mass_sf_indices=[1,3,5,7,8,9,10,11]
 tags=['JES_up','JES_down','JER_up','JER_down','JMS_up','JMS_down','JMR_up','JMR_down']
 
 for filename in file_paths:
-    signal_name=filename.split("/")[-1].replace('.h5')
+    signal_name=filename.split("/")[-1].replace('.h5','')
     for suffix in SUFFIXES:
         signal_name=signal_name.replace(suffix,'') # Get rid of the suffixes for tunes and stuff
     
     pathlib.Path(os.path.join(outfolder,signal_name)).mkdir(parents=True,exist_ok=True)        
     
+    print(f'###### SIGNAL = {signal_name} ########')
     with h5py.File(filename, "r") as f:
 
         
@@ -65,8 +68,7 @@ for filename in file_paths:
     
         # Reclustering
         #jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 0.8)
-        jetdef = fastjet.JetDefinition(fastjet.cambridge_algorithm, 0.8)
-
+        
         # 
         for ind,i in enumerate(mass_sf_indices):
             
@@ -93,7 +95,7 @@ for filename in file_paths:
             
             
             # Define output filepath and store 
-            out_filepath=os.path.join(outfolder,signal_name,signal_name+tags[ind])
+            out_filepath=os.path.join(outfolder,signal_name,signal_name+'_'+tags[ind]+'.h5')
             
             sig_hf = h5py.File(out_filepath, 'w')
             sig_hf.create_dataset('jet1_PFCands', data=sig_pf1)
