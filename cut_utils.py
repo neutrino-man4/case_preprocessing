@@ -132,3 +132,17 @@ def recluster(array,normalize,jetkinematics,jetindex=0):
         j1s[:,:,2] = np.where((j1s[:,:,2]>-1*np.pi),j1s[:,:,2],j1s[:,:,2]+2*np.pi)
 
     return j1s.astype(np.float32)
+
+def check_if_exists(signal_name,outfolder='/storage/9/abal/CASE/new_signals',return_list=False):
+    mass_sf_indices=[1,3,5,7,8,9,10,11]
+    tags=['JES_up','JES_down','JER_up','JER_down','JMS_up','JMS_down','JMR_up','JMR_down']
+    exists_ok=[]
+    for ind,i in enumerate(mass_sf_indices):
+        out_filepath=os.path.join(outfolder,signal_name,tags[ind],signal_name+'.h5')
+        if os.path.exists(out_filepath):
+            exists_ok.append(True)
+        else:
+            exists_ok.append(False)
+    if return_list:
+        return exists_ok
+    return all(exists_ok)
