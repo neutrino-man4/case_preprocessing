@@ -30,13 +30,17 @@ pt_JES_up, m_JES_up, pt_JES_down, m_JES_down, pt_JER_up, m_JER_up, pt_JER_down, 
 pt_sf_indices=[0,2,4,6]
 mass_sf_indices=[1,3,5,7,8,9,10,11]
 tags=['JES_up','JES_down','JER_up','JER_down','JMS_up','JMS_down','JMR_up','JMR_down']
-
-for filename in file_paths:
+#pdb.set_trace()
+for f,filename in enumerate(sorted(file_paths)):
+    print(f"Signal {f+1}/{len(file_paths)}")
     signal_name=filename.split("/")[-1].replace('.h5','')
+    
     for suffix in SUFFIXES:
         signal_name=signal_name.replace(suffix,'') # Get rid of the suffixes for tunes and stuff
     
-    
+    if ctl.check_if_exists(signal_name):
+        print(f"All output files for {signal_name} exist apparently. Skipping")
+        
     print(f'###### SIGNAL = {signal_name} ########')
     with h5py.File(filename, "r") as f:
 
@@ -79,10 +83,13 @@ for filename in file_paths:
         
         # 
         for ind,i in enumerate(mass_sf_indices):
-            #if ind<7: continue
+            
+            # Define output filepath and store 
+            pathlib.Path(os.path.join(outfolder,signal_name,tags[ind])).mkdir(parents=True,exist_ok=True)        
+            out_filepath=os.path.join(outfolder,signal_name,tags[ind],signal_name+'.h5')
             print('########################')
             print(f"Var: {ind+1}/{len(mass_sf_indices)}")
-            #if ind<4: continue
+            
             # Read in Jet PFCands
             sig_pf1 = np.array(f["jet1_PFCands"])[sig_mask].astype(np.float32)
             sig_pf2 = np.array(f["jet2_PFCands"])[sig_mask].astype(np.float32)
